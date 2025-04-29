@@ -3,7 +3,15 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <color name="colorPrimary">#1E6F5C</color>
+    <color name="colorPrimary">#1C3F60</color>
     <color name="colorPrimaryVariant">#14493E</color>
     <color name="colorAccent">#C9A44C</color>
+
+    <color name="colorIngreso">#A5FFBF</color>
+    <color name="colorGasto">#FF5252</color>
+
+    <color name="colorBackgroundDark">#121212</color>
+    <color name="colorSurfaceDark">#1E1E1E</color>
+    <color name="colorOnBackgroundDark">#E1E1E1</color>
+    <color name="colorOnSurfaceDark">#F0F0F0</color>
 </resources>

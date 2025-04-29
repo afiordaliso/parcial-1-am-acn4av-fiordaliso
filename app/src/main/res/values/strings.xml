@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">MisFinanzas</string>
+    <string name="app_name">Mis Finanzas</string>
     <string name="title_home">Principal</string>
-    <string name="title_dashboard">Dashboard</string>
-    <string name="title_notifications">Notifications</string>
+    <string name="title_dashboard">Cuentas</string>
+    <string name="title_notifications">Cartera</string>
 </resources>
