@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="fabMain" type="id" />
+    <item name="menu_ingreso" type="id" />
+    <item name="menu_egreso" type="id" />
+    <item name="menu_transferencia" type="id" />
+</resources>
