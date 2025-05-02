@@ -1,13 +1,18 @@
 package com.example.parcial_1_am_acn4av_fiordaliso.ui.home;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.PopupMenu;
+import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.parcial_1_am_acn4av_fiordaliso.R;
@@ -23,7 +28,12 @@ public class HomeFragment extends Fragment {
         View root = binding.getRoot();
 
         setupFAB();
+        setupUI();
         return root;
+    }
+
+    private void setupUI() {
+        // Inicialización de componentes UI si es necesario
     }
 
     private void setupFAB() {
@@ -33,10 +43,16 @@ public class HomeFragment extends Fragment {
     private void showPopupMenu(View anchorView) {
         PopupMenu popup = new PopupMenu(requireContext(), anchorView);
         try {
-            // Inflar el menú
             popup.getMenuInflater().inflate(R.menu.fab_menu, popup.getMenu());
 
-            // Listener para las opciones del menú
+            try {
+                Object backgroundHelper = PopupMenu.class.getDeclaredField("mPopup").get(popup);
+                backgroundHelper.getClass()
+                        .getDeclaredMethod("setForceShowIcon", boolean.class)
+                        .invoke(backgroundHelper, true);
+            } catch (Exception e) {
+            }
+
             popup.setOnMenuItemClickListener(item -> {
                 handleMenuItemClick(item.getItemId());
                 return true;
@@ -44,30 +60,66 @@ public class HomeFragment extends Fragment {
 
             popup.show();
         } catch (Exception e) {
-            Toast.makeText(getContext(), "Error al mostrar el menú", Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
     }
 
     private void handleMenuItemClick(int menuItemId) {
+        String tipo = "";
+        String monto = "";
+        int icono = 0;
+        int color = 0;
+
         if (menuItemId == R.id.menu_ingreso) {
-            showToast("Ingreso seleccionado");
+            tipo = "Ingreso";
+            monto = "+$10.000";
+            icono = R.drawable.baseline_arrow_upward_24;
+            color = R.color.colorIngreso;
+        }
+        else if (menuItemId == R.id.menu_gasto) {
+            tipo = "Gasto";
+            monto = "-$2.000";
+            icono = R.drawable.baseline_arrow_downward_24;
+            color = R.color.colorGasto;
+        }
+        else if (menuItemId == R.id.menu_transferencia) {
+            tipo = "Transferencia";
+            monto = "$1.500";
+            icono = R.drawable.baseline_close_fullscreen_24;
+            color = R.color.colorTransferencia;
+        }
 
-        } else if (menuItemId == R.id.menu_gasto) {
-            showToast("Gasto seleccionado");
-
-        } else if (menuItemId == R.id.menu_transferencia) {
-            showToast("Transferencia seleccionada");
-
+        if (!tipo.isEmpty()) {
+            agregarTransaccion(tipo, monto, icono, color);
         }
     }
 
-    private void showToast(String message) {
-        if (getContext() != null) {
-            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
-        }
-    }
 
+    private void agregarTransaccion(String tipo, String monto, int iconResId, int colorResId) {
+        View itemView = LayoutInflater.from(getContext())
+                .inflate(R.layout.item_transaccion, binding.listaTransacciones, false);
+
+        ImageView ivIcono = itemView.findViewById(R.id.ivIcono);
+        TextView tvDescripcion = itemView.findViewById(R.id.tvDescripcion);
+        TextView tvMonto = itemView.findViewById(R.id.tvMonto);
+
+        // Configurar icono
+        ivIcono.setImageResource(iconResId);
+        ivIcono.setColorFilter(ContextCompat.getColor(requireContext(), colorResId));
+
+        // Configurar textos
+        tvDescripcion.setText(tipo);
+        tvMonto.setText(monto);
+        tvMonto.setTextColor(ContextCompat.getColor(requireContext(), colorResId));
+
+        // Agregar a la lista (posición 0 = arriba del todo)
+        binding.listaTransacciones.addView(itemView, 0);
+
+        // Scroll automático para ver la nueva transacción
+        binding.scrollTransacciones.post(() -> {
+            binding.scrollTransacciones.fullScroll(ScrollView.FOCUS_UP);
+        });
+    }
     @Override
     public void onDestroyView() {
         super.onDestroyView();

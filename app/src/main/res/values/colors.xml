@@ -9,6 +9,8 @@
 
     <color name="colorIngreso">#A5FFBF</color>
     <color name="colorGasto">#FF5252</color>
+    <color name="colorTransferencia">#0361D7</color>
+
 
     <color name="colorBackgroundDark">#121212</color>
     <color name="colorSurfaceDark">#1E1E1E</color>
