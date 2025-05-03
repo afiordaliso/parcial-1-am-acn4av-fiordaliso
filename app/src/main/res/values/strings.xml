@@ -3,4 +3,14 @@
     <string name="title_home">Principal</string>
     <string name="title_dashboard">Cuentas</string>
     <string name="title_notifications">Cartera</string>
+
+    <string-array name="tipos_transaccion">
+        <item>Ingreso</item>
+        <item>Gasto</item>
+    </string-array>
+
+    <string name="descripcion">Descipcion</string>
+    <string name="monto">Monto</string>
+
+
 </resources>

@@ -1,128 +1,119 @@
 package com.example.parcial_1_am_acn4av_fiordaliso.ui.home;
 
-import android.graphics.Color;
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.PopupMenu;
-import android.widget.ScrollView;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.parcial_1_am_acn4av_fiordaliso.R;
-import com.example.parcial_1_am_acn4av_fiordaliso.databinding.FragmentHomeBinding;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class HomeFragment extends Fragment {
 
-    private FragmentHomeBinding binding;
+    private LinearLayout listaTransacciones;
+    private FloatingActionButton fabMain;
+    private TextView tvTotalMonto, tvIngresosMonto, tvGastosMonto;
+
+    private double total = 0;
+    private double totalIngresos = 0;
+    private double totalGastos = 0;
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_home, container, false);
+    }
 
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        binding = FragmentHomeBinding.inflate(inflater, container, false);
-        View root = binding.getRoot();
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
-        setupFAB();
-        setupUI();
-        return root;
+        listaTransacciones = view.findViewById(R.id.listaTransacciones);
+        fabMain = view.findViewById(R.id.fabMain);
+        tvTotalMonto = view.findViewById(R.id.tvTotalMonto);
+        tvIngresosMonto = view.findViewById(R.id.tvIngresosMonto);
+        tvGastosMonto = view.findViewById(R.id.tvGastosMonto);
+
+        fabMain.setOnClickListener(v -> mostrarDialogoNuevaTransaccion());
     }
 
-    private void setupUI() {
-        // Inicialización de componentes UI si es necesario
-    }
+    private void mostrarDialogoNuevaTransaccion() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.add_transaccion, null);
+        builder.setView(dialogView);
 
-    private void setupFAB() {
-        binding.fabMain.setOnClickListener(v -> showPopupMenu(v));
-    }
+        EditText etDescripcion = dialogView.findViewById(R.id.etDescripcion);
+        EditText etMonto = dialogView.findViewById(R.id.etMonto);
+        Spinner spinnerTipo = dialogView.findViewById(R.id.spinnerTipo);
 
-    private void showPopupMenu(View anchorView) {
-        PopupMenu popup = new PopupMenu(requireContext(), anchorView);
-        try {
-            popup.getMenuInflater().inflate(R.menu.fab_menu, popup.getMenu());
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(requireContext(),
+                R.array.tipos_transaccion, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerTipo.setAdapter(adapter);
 
-            try {
-                Object backgroundHelper = PopupMenu.class.getDeclaredField("mPopup").get(popup);
-                backgroundHelper.getClass()
-                        .getDeclaredMethod("setForceShowIcon", boolean.class)
-                        .invoke(backgroundHelper, true);
-            } catch (Exception e) {
+        builder.setTitle("Nueva Transacción");
+        builder.setPositiveButton("Agregar", (dialog, which) -> {
+            String descripcion = etDescripcion.getText().toString().trim();
+            String montoStr = etMonto.getText().toString().trim();
+            String tipo = spinnerTipo.getSelectedItem().toString();
+
+            if (!descripcion.isEmpty() && !montoStr.isEmpty()) {
+                try {
+                    double monto = Double.parseDouble(montoStr);
+                    agregarTransaccion(descripcion, tipo, monto);
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
             }
-
-            popup.setOnMenuItemClickListener(item -> {
-                handleMenuItemClick(item.getItemId());
-                return true;
-            });
-
-            popup.show();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void handleMenuItemClick(int menuItemId) {
-        String tipo = "";
-        String monto = "";
-        int icono = 0;
-        int color = 0;
-
-        if (menuItemId == R.id.menu_ingreso) {
-            tipo = "Ingreso";
-            monto = "+$10.000";
-            icono = R.drawable.baseline_arrow_upward_24;
-            color = R.color.colorIngreso;
-        }
-        else if (menuItemId == R.id.menu_gasto) {
-            tipo = "Gasto";
-            monto = "-$2.000";
-            icono = R.drawable.baseline_arrow_downward_24;
-            color = R.color.colorGasto;
-        }
-        else if (menuItemId == R.id.menu_transferencia) {
-            tipo = "Transferencia";
-            monto = "$1.500";
-            icono = R.drawable.baseline_close_fullscreen_24;
-            color = R.color.colorTransferencia;
-        }
-
-        if (!tipo.isEmpty()) {
-            agregarTransaccion(tipo, monto, icono, color);
-        }
-    }
-
-
-    private void agregarTransaccion(String tipo, String monto, int iconResId, int colorResId) {
-        View itemView = LayoutInflater.from(getContext())
-                .inflate(R.layout.item_transaccion, binding.listaTransacciones, false);
-
-        ImageView ivIcono = itemView.findViewById(R.id.ivIcono);
-        TextView tvDescripcion = itemView.findViewById(R.id.tvDescripcion);
-        TextView tvMonto = itemView.findViewById(R.id.tvMonto);
-
-        // Configurar icono
-        ivIcono.setImageResource(iconResId);
-        ivIcono.setColorFilter(ContextCompat.getColor(requireContext(), colorResId));
-
-        // Configurar textos
-        tvDescripcion.setText(tipo);
-        tvMonto.setText(monto);
-        tvMonto.setTextColor(ContextCompat.getColor(requireContext(), colorResId));
-
-        // Agregar a la lista (posición 0 = arriba del todo)
-        binding.listaTransacciones.addView(itemView, 0);
-
-        // Scroll automático para ver la nueva transacción
-        binding.scrollTransacciones.post(() -> {
-            binding.scrollTransacciones.fullScroll(ScrollView.FOCUS_UP);
         });
+
+        builder.setNegativeButton("Cancelar", null);
+        builder.create().show();
     }
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null;
+
+    private void agregarTransaccion(String descripcion, String tipo, double monto) {
+        View item = LayoutInflater.from(getContext()).inflate(R.layout.item_transaccion, listaTransacciones, false);
+
+        TextView tvDescripcion = item.findViewById(R.id.tvDescripcion);
+        TextView tvMonto = item.findViewById(R.id.tvMonto);
+        TextView tvFecha = item.findViewById(R.id.tvFecha);
+        ImageView ivIcono = item.findViewById(R.id.ivIcono);
+
+        tvDescripcion.setText(descripcion);
+        tvMonto.setText(String.format(Locale.getDefault(), "$ %.2f", monto));
+        tvFecha.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+
+        if (tipo.equalsIgnoreCase("Ingreso")) {
+            ivIcono.setImageResource(R.drawable.baseline_arrow_upward_24);
+            totalIngresos += monto;
+            total += monto;
+        } else if (tipo.equalsIgnoreCase("Gasto")) {
+            ivIcono.setImageResource(R.drawable.baseline_arrow_downward_24);
+            totalGastos += monto;
+            total -= monto;
+        }
+
+        // Actualizar indicadores
+        tvTotalMonto.setText(String.format(Locale.getDefault(), "$ %.2f", total));
+        tvIngresosMonto.setText(String.format(Locale.getDefault(), "$ %.2f", totalIngresos));
+        tvGastosMonto.setText(String.format(Locale.getDefault(), "$ %.2f", totalGastos));
+
+        listaTransacciones.addView(item);
     }
 }
