@@ -3,20 +3,34 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@id/navigation_home">
+    app:startDestination="@id/splashFragment">
+
+    <fragment
+        android:id="@+id/splashFragment"
+        android:name="com.example.parcial_1_am_acn4av_fiordaliso.ui.splash.SplashFragment"
+        android:label="Splash"
+        tools:layout="@layout/splash_fragment">
+
+        <action
+            android:id="@+id/action_splash_to_home"
+            app:destination="@id/navigation_home" />
+    </fragment>
 
     <fragment
         android:id="@+id/navigation_home"
         android:name="com.example.parcial_1_am_acn4av_fiordaliso.ui.home.HomeFragment"
+        android:label="Home"
         tools:layout="@layout/fragment_home" />
 
     <fragment
         android:id="@+id/navigation_dashboard"
         android:name="com.example.parcial_1_am_acn4av_fiordaliso.ui.dashboard.DashboardFragment"
+        android:label="Dashboard"
         tools:layout="@layout/fragment_dashboard" />
 
     <fragment
         android:id="@+id/navigation_notifications"
         android:name="com.example.parcial_1_am_acn4av_fiordaliso.ui.notifications.NotificationsFragment"
+        android:label="Notifications"
         tools:layout="@layout/fragment_notifications" />
 </navigation>

@@ -12,5 +12,7 @@
     <string name="descripcion">Descipcion</string>
     <string name="monto">Monto</string>
 
+    <string name="publicidad">Publicidad</string>
+
 
 </resources>
