@@ -9,10 +9,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.parcial_1_am_acn4av_fiordaliso" />
+                  <option name="mobileSdkAppId" value="1:232371588273:android:50f24a2619029ecf072690" />
+                  <option name="projectId" value="mis-finanzas-pra" />
+                  <option name="projectNumber" value="232371588273" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

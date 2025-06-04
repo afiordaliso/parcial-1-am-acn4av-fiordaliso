@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -35,7 +36,8 @@ android {
 }
 
 dependencies {
-
+    implementation ("androidx.navigation:navigation-fragment:2.5.3")
+    implementation ("androidx.navigation:navigation-ui:2.5.3")
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.constraintlayout)
@@ -44,7 +46,12 @@ dependencies {
     implementation(libs.navigation.fragment)
     implementation(libs.navigation.ui)
     implementation ("androidx.appcompat:appcompat:1.6.1")
+    implementation(libs.firebase.database)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
+    implementation ("com.google.firebase:firebase-analytics")
+    implementation ("com.google.firebase:firebase-database")
+    implementation ("androidx.appcompat:appcompat:1.6.1")
 }
