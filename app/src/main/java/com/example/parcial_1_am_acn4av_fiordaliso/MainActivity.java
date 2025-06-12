@@ -1,6 +1,7 @@
 package com.example.parcial_1_am_acn4av_fiordaliso;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -15,6 +16,8 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -22,6 +25,9 @@ public class MainActivity extends AppCompatActivity {
     private NavController navController;
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
+    private BottomNavigationView bottomNavigationView;
+    private FirebaseStorage storage;
+    private StorageReference storageRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,11 +47,13 @@ public class MainActivity extends AppCompatActivity {
     private void initializeFirebase() {
         FirebaseApp.initializeApp(this);
         db = FirebaseFirestore.getInstance();
+        storage = FirebaseStorage.getInstance();
+        storageRef = storage.getReference();
         Log.d(TAG, "Firebase inicializado correctamente");
     }
 
     private void setupNavigation() {
-        BottomNavigationView navView = findViewById(R.id.nav_view);
+        bottomNavigationView = findViewById(R.id.nav_view);
 
         NavHostFragment navHostFragment =
                 (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_activity_main);
@@ -55,11 +63,31 @@ public class MainActivity extends AppCompatActivity {
             AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
                     R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications)
                     .build();
-            NavigationUI.setupWithNavController(navView, navController);
+            NavigationUI.setupWithNavController(bottomNavigationView, navController);
         } else {
             Log.e(TAG, "Error: NavHostFragment no encontrado");
             showToast("Error en navegación, reinicia la app");
         }
+    }
+
+    private void uploadFile(Uri fileUri) {
+        if (fileUri != null) {
+            StorageReference fileRef = storageRef.child("uploads/" + System.currentTimeMillis() + ".jpg");
+
+            fileRef.putFile(fileUri)
+                    .addOnSuccessListener(taskSnapshot -> showToast("Archivo subido correctamente"))
+                    .addOnFailureListener(e -> showToast("Error al subir archivo: " + e.getMessage()));
+        } else {
+            showToast("No se seleccionó ningún archivo");
+        }
+    }
+
+    private void downloadFile(String filePath) {
+        StorageReference fileRef = storageRef.child(filePath);
+
+        fileRef.getDownloadUrl()
+                .addOnSuccessListener(uri -> Log.d("Download", "URL del archivo: " + uri.toString()))
+                .addOnFailureListener(e -> showToast("Error al descargar archivo: " + e.getMessage()));
     }
 
     private void showToast(String mensaje) {
