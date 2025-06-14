@@ -21,7 +21,6 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <!-- Icono -->
             <ImageView
                 android:id="@+id/ivIcono"
                 android:layout_width="24dp"
@@ -29,7 +28,6 @@
                 android:layout_marginEnd="12dp"
                 android:contentDescription="Ícono de transacción" />
 
-            <!-- Descripción -->
             <TextView
                 android:id="@+id/tvDescripcion"
                 android:layout_width="0dp"
@@ -39,7 +37,6 @@
                 android:textSize="16sp"
                 android:textColor="#333333" />
 
-            <!-- Contenedor de Monto y Fecha -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -57,7 +54,6 @@
                     android:textStyle="bold"
                     android:gravity="end" />
 
-                <!-- Fecha debajo del monto -->
                 <TextView
                     android:id="@+id/tvFecha"
                     android:layout_width="wrap_content"
