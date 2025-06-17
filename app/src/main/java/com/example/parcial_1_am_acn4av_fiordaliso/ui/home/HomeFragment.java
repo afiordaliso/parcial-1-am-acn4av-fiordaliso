@@ -15,7 +15,6 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -26,10 +25,15 @@ import com.example.parcial_1_am_acn4av_fiordaliso.EditarMovimientoActivity;
 import com.example.parcial_1_am_acn4av_fiordaliso.Movimiento;
 import com.example.parcial_1_am_acn4av_fiordaliso.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class HomeFragment extends Fragment {
 
@@ -44,29 +48,31 @@ public class HomeFragment extends Fragment {
     private View viewSeleccionado = null;
     private Movimiento movimientoOriginal;
 
+    private FirebaseFirestore db;
+    private String userId = "Agustin"; // TODO: Reemplazar con el usuario autenticado
+
     private final ActivityResultLauncher<Intent> editarMovimientoLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), (ActivityResult result) -> {
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     Movimiento actualizado = result.getData().getParcelableExtra("movimientoEditado");
                     if (actualizado != null && viewSeleccionado != null && movimientoOriginal != null) {
-                        editarTransaccion(viewSeleccionado, movimientoOriginal, actualizado);
-                        Toast.makeText(getContext(), "Movimiento actualizado", Toast.LENGTH_SHORT).show();
+                        actualizarTransaccionEnFirestore(viewSeleccionado, movimientoOriginal, actualizado);
+                        Toast.makeText(getContext(), "Transacción actualizada", Toast.LENGTH_SHORT).show();
                     }
                 }
             });
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_home, container, false);
     }
 
     @Override
-    public void onViewCreated(@NonNull View view,
-                              @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        db = FirebaseFirestore.getInstance();
 
         listaTransacciones = view.findViewById(R.id.listaTransacciones);
         fabMain = view.findViewById(R.id.fabMain);
@@ -75,6 +81,8 @@ public class HomeFragment extends Fragment {
         tvGastosMonto = view.findViewById(R.id.tvGastosMonto);
 
         fabMain.setOnClickListener(v -> mostrarDialogoNuevaTransaccion());
+
+        cargarTransaccionesDesdeFirestore();
     }
 
     private void mostrarDialogoNuevaTransaccion() {
@@ -100,7 +108,7 @@ public class HomeFragment extends Fragment {
             if (!descripcion.isEmpty() && !montoStr.isEmpty()) {
                 try {
                     double monto = Double.parseDouble(montoStr);
-                    agregarTransaccion(descripcion, tipo, monto);
+                    guardarTransaccionEnFirestore(descripcion, tipo, monto);
                 } catch (NumberFormatException e) {
                     Toast.makeText(getContext(), "Monto inválido", Toast.LENGTH_SHORT).show();
                 }
@@ -113,15 +121,42 @@ public class HomeFragment extends Fragment {
         builder.create().show();
     }
 
-    private void agregarTransaccion(String descripcion, String tipo, double monto) {
+    private void guardarTransaccionEnFirestore(String descripcion, String tipo, double monto) {
+        Map<String, Object> movimiento = new HashMap<>();
+        movimiento.put("descripcion", descripcion);
+        movimiento.put("tipo", tipo);
+        movimiento.put("monto", monto);
+        movimiento.put("fecha", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+
+        db.collection("usuarios").document(userId)
+                .collection("movimientos").add(movimiento)
+                .addOnSuccessListener(documentReference -> cargarTransaccionesDesdeFirestore())
+                .addOnFailureListener(e -> Toast.makeText(getContext(), "Error al guardar", Toast.LENGTH_SHORT).show());
+    }
+
+    private void cargarTransaccionesDesdeFirestore() {
+        listaTransacciones.removeAllViews();
+        total = 0;
+        totalIngresos = 0;
+        totalGastos = 0;
+
+        db.collection("usuarios").document(userId)
+                .collection("movimientos").get()
+                .addOnSuccessListener(querySnapshot -> {
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        agregarTransaccion(doc.getId(), doc.getString("descripcion"), doc.getString("tipo"), doc.getDouble("monto"), doc.getString("fecha"));
+                    }
+                })
+                .addOnFailureListener(e -> Toast.makeText(getContext(), "Error al cargar transacciones", Toast.LENGTH_SHORT).show());
+    }
+
+    private void agregarTransaccion(String transaccionId, String descripcion, String tipo, double monto, String fecha) {
         View item = LayoutInflater.from(getContext()).inflate(R.layout.item_transaccion, listaTransacciones, false);
 
         TextView tvDescripcion = item.findViewById(R.id.tvDescripcion);
         TextView tvMonto = item.findViewById(R.id.tvMonto);
         TextView tvFecha = item.findViewById(R.id.tvFecha);
         ImageView ivIcono = item.findViewById(R.id.ivIcono);
-
-        String fecha = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
 
         tvDescripcion.setText(descripcion);
         tvMonto.setText(String.format(Locale.getDefault(), "$ %.2f", monto));
@@ -142,18 +177,7 @@ public class HomeFragment extends Fragment {
         actualizarResumen();
 
         item.setOnClickListener(v -> {
-            TextView descripcionView = item.findViewById(R.id.tvDescripcion);
-            TextView montoView = item.findViewById(R.id.tvMonto);
-            TextView fechaView = item.findViewById(R.id.tvFecha);
-            ImageView iconoView = item.findViewById(R.id.ivIcono);
-
-            String descActual = descripcionView.getText().toString();
-            String montoStr = montoView.getText().toString().replace("$", "").trim();
-            double montoActual = Double.parseDouble(montoStr);
-            String fechaActual = fechaView.getText().toString();
-            String tipoActual = iconoView.getTag().toString();
-
-            movimientoOriginal = new Movimiento(descActual, tipoActual, montoActual, fechaActual);
+            movimientoOriginal = new Movimiento(descripcion, tipo, monto, fecha);
             viewSeleccionado = item;
 
             Intent intent = new Intent(getContext(), EditarMovimientoActivity.class);
@@ -164,12 +188,19 @@ public class HomeFragment extends Fragment {
         listaTransacciones.addView(item);
     }
 
+    private void actualizarResumen() {
+        tvTotalMonto.setText(String.format(Locale.getDefault(), "$ %.2f", total));
+        tvIngresosMonto.setText(String.format(Locale.getDefault(), "$ %.2f", totalIngresos));
+        tvGastosMonto.setText(String.format(Locale.getDefault(), "$ %.2f", totalGastos));
+    }
+
     private void editarTransaccion(View item, Movimiento anterior, Movimiento nuevo) {
         TextView tvDescripcion = item.findViewById(R.id.tvDescripcion);
         TextView tvMonto = item.findViewById(R.id.tvMonto);
         TextView tvFecha = item.findViewById(R.id.tvFecha);
         ImageView ivIcono = item.findViewById(R.id.ivIcono);
 
+        // Restar valores anteriores
         if (anterior.getTipo().equalsIgnoreCase("Ingreso")) {
             totalIngresos -= anterior.getMonto();
             total -= anterior.getMonto();
@@ -178,6 +209,7 @@ public class HomeFragment extends Fragment {
             total += anterior.getMonto();
         }
 
+        // Aplicar nuevos valores
         tvDescripcion.setText(nuevo.getDescripcion());
         tvMonto.setText(String.format(Locale.getDefault(), "$ %.2f", nuevo.getMonto()));
         String nuevaFecha = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
@@ -197,10 +229,29 @@ public class HomeFragment extends Fragment {
 
         actualizarResumen();
     }
+    private void actualizarTransaccionEnFirestore(View item, Movimiento anterior, Movimiento nuevo) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-    private void actualizarResumen() {
-        tvTotalMonto.setText(String.format(Locale.getDefault(), "$ %.2f", total));
-        tvIngresosMonto.setText(String.format(Locale.getDefault(), "$ %.2f", totalIngresos));
-        tvGastosMonto.setText(String.format(Locale.getDefault(), "$ %.2f", totalGastos));
+        String transaccionId = anterior.getId(); // Esto requiere que `Movimiento` tenga un campo `id`
+        if (transaccionId == null || transaccionId.isEmpty()) {
+            Toast.makeText(getContext(), "Error: ID de transacción no encontrado", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Map<String, Object> datosActualizados = new HashMap<>();
+        datosActualizados.put("descripcion", nuevo.getDescripcion());
+        datosActualizados.put("tipo", nuevo.getTipo());
+        datosActualizados.put("monto", nuevo.getMonto());
+        datosActualizados.put("fecha", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+
+        db.collection("usuarios").document(userId) // Reemplazar con el usuario autenticado
+                .collection("movimientos").document(transaccionId)
+                .update(datosActualizados)
+                .addOnSuccessListener(aVoid -> {
+                    editarTransaccion(item, anterior, nuevo); // Actualiza la vista en pantalla
+                    Toast.makeText(getContext(), "Transacción actualizada en Firestore", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(getContext(), "Error al actualizar en Firestore", Toast.LENGTH_SHORT).show());
     }
 }
