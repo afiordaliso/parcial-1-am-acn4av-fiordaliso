@@ -4,22 +4,24 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class Movimiento implements Parcelable {
-    private String id; // ✅ Nuevo campo para identificar cada transacción
+    private String id; // ✅ Nuevo campo para identificar cada transacción en Firestore
     private String descripcion;
     private String tipo;
     private double monto;
     private String fecha;
 
+    // Constructor con ID (cuando ya existe en Firestore)
     public Movimiento(String id, String descripcion, String tipo, double monto, String fecha) {
-        this.id = id;
+        this.id = (id == null || id.isEmpty()) ? "SIN_ID" : id; // Previene valores nulos
         this.descripcion = descripcion;
         this.tipo = tipo;
         this.monto = monto;
         this.fecha = fecha;
     }
 
+    // Constructor sin ID (cuando se crea un movimiento nuevo)
     public Movimiento(String descripcion, String tipo, double monto, String fecha) {
-        this.id = ""; // Se puede asignar luego desde Firestore
+        this.id = "SIN_ID"; // Se asignará desde Firestore luego
         this.descripcion = descripcion;
         this.tipo = tipo;
         this.monto = monto;
@@ -60,13 +62,13 @@ public class Movimiento implements Parcelable {
         return 0;
     }
 
-    // ✅ Getters y Setters agregados
+    // ✅ Getters y Setters mejorados para evitar valores nulos
     public String getId() {
         return id;
     }
 
     public void setId(String id) {
-        this.id = id;
+        this.id = (id == null || id.isEmpty()) ? "SIN_ID" : id; // Validación de seguridad
     }
 
     public String getDescripcion() {

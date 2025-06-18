@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,13 +26,18 @@ import com.example.parcial_1_am_acn4av_fiordaliso.EditarMovimientoActivity;
 import com.example.parcial_1_am_acn4av_fiordaliso.Movimiento;
 import com.example.parcial_1_am_acn4av_fiordaliso.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.Timestamp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.Query;
 
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -49,8 +55,7 @@ public class HomeFragment extends Fragment {
     private Movimiento movimientoOriginal;
 
     private FirebaseFirestore db;
-    private String userId = "Agustin"; // TODO: Reemplazar con el usuario autenticado
-
+    private String userId;
     private final ActivityResultLauncher<Intent> editarMovimientoLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
@@ -72,19 +77,31 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        db = FirebaseFirestore.getInstance();
-
+        // 🔥 Inicializar elementos correctamente
         listaTransacciones = view.findViewById(R.id.listaTransacciones);
-        fabMain = view.findViewById(R.id.fabMain);
         tvTotalMonto = view.findViewById(R.id.tvTotalMonto);
         tvIngresosMonto = view.findViewById(R.id.tvIngresosMonto);
         tvGastosMonto = view.findViewById(R.id.tvGastosMonto);
+        fabMain = view.findViewById(R.id.fabMain);
 
+        // 🚀 Validación mejorada: evitar errores de referencia nula
+        if (listaTransacciones == null || tvTotalMonto == null || tvIngresosMonto == null || tvGastosMonto == null || fabMain == null) {
+            Toast.makeText(getContext(), "Error: Elementos de la vista no inicializados correctamente", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 🔥 Configurar el botón de nueva transacción
         fabMain.setOnClickListener(v -> mostrarDialogoNuevaTransaccion());
 
-        cargarTransaccionesDesdeFirestore();
+        // 🔥 Obtener usuario autenticado de Firebase
+        FirebaseUser usuarioActual = FirebaseAuth.getInstance().getCurrentUser();
+        if (usuarioActual != null) {
+            userId = usuarioActual.getUid();
+            cargarTransaccionesDesdeFirestore(userId);
+        } else {
+            Toast.makeText(getContext(), "Error: Usuario no autenticado", Toast.LENGTH_SHORT).show();
+        }
     }
-
     private void mostrarDialogoNuevaTransaccion() {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.add_transaccion, null);
@@ -93,6 +110,11 @@ public class HomeFragment extends Fragment {
         EditText etDescripcion = dialogView.findViewById(R.id.etDescripcion);
         EditText etMonto = dialogView.findViewById(R.id.etMonto);
         Spinner spinnerTipo = dialogView.findViewById(R.id.spinnerTipo);
+
+        if (etDescripcion == null || etMonto == null || spinnerTipo == null) {
+            Toast.makeText(getContext(), "Error: No se pudieron inicializar los campos del formulario", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(requireContext(),
                 R.array.tipos_transaccion, android.R.layout.simple_spinner_item);
@@ -105,15 +127,34 @@ public class HomeFragment extends Fragment {
             String montoStr = etMonto.getText().toString().trim();
             String tipo = spinnerTipo.getSelectedItem().toString();
 
-            if (!descripcion.isEmpty() && !montoStr.isEmpty()) {
-                try {
-                    double monto = Double.parseDouble(montoStr);
-                    guardarTransaccionEnFirestore(descripcion, tipo, monto);
-                } catch (NumberFormatException e) {
-                    Toast.makeText(getContext(), "Monto inválido", Toast.LENGTH_SHORT).show();
+            // 🔥 Validaciones mejoradas para evitar errores
+            if (descripcion.isEmpty()) {
+                Toast.makeText(getContext(), "Error: La descripción no puede estar vacía", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (montoStr.isEmpty()) {
+                Toast.makeText(getContext(), "Error: Debes ingresar un monto", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            try {
+                double monto = Double.parseDouble(montoStr);
+
+                if (monto <= 0) {
+                    Toast.makeText(getContext(), "Error: El monto debe ser mayor a 0", Toast.LENGTH_SHORT).show();
+                    return;
                 }
-            } else {
-                Toast.makeText(getContext(), "Completa todos los campos", Toast.LENGTH_SHORT).show();
+
+                // 🔥 Corrección: Validar tipo de transacción antes de guardar
+                if (!tipo.equalsIgnoreCase("Ingreso") && !tipo.equalsIgnoreCase("Gasto")) {
+                    Toast.makeText(getContext(), "Error: Tipo de transacción inválido", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                guardarTransaccionEnFirestore(descripcion, tipo, monto);
+            } catch (NumberFormatException e) {
+                Toast.makeText(getContext(), "Error: Monto inválido, ingrese un número válido", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -122,35 +163,118 @@ public class HomeFragment extends Fragment {
     }
 
     private void guardarTransaccionEnFirestore(String descripcion, String tipo, double monto) {
+        FirebaseUser usuarioActual = FirebaseAuth.getInstance().getCurrentUser();
+        if (usuarioActual == null) {
+            Toast.makeText(getContext(), "Error: Usuario no autenticado", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String userId = usuarioActual.getUid();
+
+        if (descripcion == null || tipo == null || descripcion.trim().isEmpty() || tipo.trim().isEmpty() || monto <= 0) {
+            Toast.makeText(getContext(), "Error: Datos inválidos", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!tipo.equalsIgnoreCase("Ingreso") && !tipo.equalsIgnoreCase("Gasto")) {
+            Toast.makeText(getContext(), "Error: Tipo de transacción inválido", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String fecha = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(new Date());
+
         Map<String, Object> movimiento = new HashMap<>();
-        movimiento.put("descripcion", descripcion);
-        movimiento.put("tipo", tipo);
+        movimiento.put("userId", userId);
+        movimiento.put("descripcion", descripcion.trim());
+        movimiento.put("tipo", tipo.trim());
         movimiento.put("monto", monto);
-        movimiento.put("fecha", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+        movimiento.put("fecha", fecha);
 
-        db.collection("usuarios").document(userId)
-                .collection("movimientos").add(movimiento)
-                .addOnSuccessListener(documentReference -> cargarTransaccionesDesdeFirestore())
-                .addOnFailureListener(e -> Toast.makeText(getContext(), "Error al guardar", Toast.LENGTH_SHORT).show());
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("movimientos")
+                .add(movimiento)
+                .addOnSuccessListener(documentReference -> {
+                    Toast.makeText(getContext(), "✅ Transacción agregada correctamente", Toast.LENGTH_SHORT).show();
+                    cargarTransaccionesDesdeFirestore(userId); // sin delay, directa
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getContext(), "❌ Error al guardar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
+    private void cargarTransaccionesDesdeFirestore(String userId) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-    private void cargarTransaccionesDesdeFirestore() {
+        if (listaTransacciones == null) {
+            Toast.makeText(getContext(), "Error: listaTransacciones no inicializada", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 🔄 Resetear visual y contadores
         listaTransacciones.removeAllViews();
         total = 0;
         totalIngresos = 0;
         totalGastos = 0;
 
-        db.collection("usuarios").document(userId)
-                .collection("movimientos").get()
+        db.collection("movimientos")
+                .whereEqualTo("userId", userId)
+                .get()
                 .addOnSuccessListener(querySnapshot -> {
-                    for (QueryDocumentSnapshot doc : querySnapshot) {
-                        agregarTransaccion(doc.getId(), doc.getString("descripcion"), doc.getString("tipo"), doc.getDouble("monto"), doc.getString("fecha"));
+                    if (querySnapshot == null || querySnapshot.isEmpty()) {
+                        Toast.makeText(getContext(), "No hay transacciones registradas", Toast.LENGTH_SHORT).show();
+                        actualizarResumen();
+                        return;
                     }
-                })
-                .addOnFailureListener(e -> Toast.makeText(getContext(), "Error al cargar transacciones", Toast.LENGTH_SHORT).show());
-    }
 
+                    List<DocumentSnapshot> docs = querySnapshot.getDocuments();
+                    // 🧮 Ordenar por fecha descendente
+                    Collections.sort(docs, (a, b) -> {
+                        String f1 = a.getString("fecha");
+                        String f2 = b.getString("fecha");
+                        return f2 != null && f1 != null ? f2.compareTo(f1) : 0;
+                    });
+
+                    for (DocumentSnapshot doc : docs) {
+                        String descripcion = doc.getString("descripcion");
+                        String tipo = doc.getString("tipo");
+                        Double monto = doc.getDouble("monto");
+                        String fechaRaw = doc.getString("fecha");
+                        String transaccionId = doc.getId();
+
+                        if (descripcion == null || tipo == null || monto == null || fechaRaw == null) {
+                            Log.w("Firestore", "Transacción con campos nulos: " + transaccionId);
+                            continue;
+                        }
+
+                        // 📆 Convertir "yyyyMMddHHmmss" → "dd/MM/yyyy"
+                        String fechaFormateada = fechaRaw.length() >= 8
+                                ? fechaRaw.substring(6, 8) + "/" + fechaRaw.substring(4, 6) + "/" + fechaRaw.substring(0, 4)
+                                : fechaRaw;
+
+                        agregarTransaccion(transaccionId, descripcion, tipo, monto, fechaFormateada);
+
+                        if ("Ingreso".equalsIgnoreCase(tipo)) {
+                            totalIngresos += monto;
+                            total += monto;
+                        } else if ("Gasto".equalsIgnoreCase(tipo)) {
+                            totalGastos += monto;
+                            total -= monto;
+                        } else {
+                            Log.w("Firestore", "Tipo desconocido: " + tipo);
+                        }
+                    }
+
+                    actualizarResumen();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(getContext(), "Error al cargar transacciones: " + e.getMessage(), Toast.LENGTH_LONG).show()
+                );
+    }
     private void agregarTransaccion(String transaccionId, String descripcion, String tipo, double monto, String fecha) {
+        if (listaTransacciones == null) {
+            Toast.makeText(getContext(), "Error: listaTransacciones no inicializada", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         View item = LayoutInflater.from(getContext()).inflate(R.layout.item_transaccion, listaTransacciones, false);
 
         TextView tvDescripcion = item.findViewById(R.id.tvDescripcion);
@@ -158,41 +282,43 @@ public class HomeFragment extends Fragment {
         TextView tvFecha = item.findViewById(R.id.tvFecha);
         ImageView ivIcono = item.findViewById(R.id.ivIcono);
 
+        if (tvDescripcion == null || tvMonto == null || tvFecha == null || ivIcono == null) {
+            Toast.makeText(getContext(), "Error: No se pudieron inicializar los elementos de la transacción", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         tvDescripcion.setText(descripcion);
         tvMonto.setText(String.format(Locale.getDefault(), "$ %.2f", monto));
         tvFecha.setText(fecha);
 
-        if (tipo.equalsIgnoreCase("Ingreso")) {
+        if ("Ingreso".equalsIgnoreCase(tipo)) {
             ivIcono.setImageResource(R.drawable.baseline_arrow_upward_24);
             ivIcono.setTag("Ingreso");
-            totalIngresos += monto;
-            total += monto;
-        } else {
+        } else if ("Gasto".equalsIgnoreCase(tipo)) {
             ivIcono.setImageResource(R.drawable.baseline_arrow_downward_24);
             ivIcono.setTag("Gasto");
-            totalGastos += monto;
-            total -= monto;
+        } else {
+            Toast.makeText(getContext(), "Error: Tipo de transacción desconocido", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        actualizarResumen();
-
-        item.setOnClickListener(v -> {
-            movimientoOriginal = new Movimiento(descripcion, tipo, monto, fecha);
-            viewSeleccionado = item;
-
-            Intent intent = new Intent(getContext(), EditarMovimientoActivity.class);
-            intent.putExtra("movimiento", movimientoOriginal);
-            editarMovimientoLauncher.launch(intent);
-        });
-
         listaTransacciones.addView(item);
+
+        if (listaTransacciones.indexOfChild(item) == -1) {
+            Toast.makeText(getContext(), "Error: La transacción no se agregó correctamente", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void actualizarResumen() {
-        tvTotalMonto.setText(String.format(Locale.getDefault(), "$ %.2f", total));
-        tvIngresosMonto.setText(String.format(Locale.getDefault(), "$ %.2f", totalIngresos));
-        tvGastosMonto.setText(String.format(Locale.getDefault(), "$ %.2f", totalGastos));
+        if (tvTotalMonto != null && tvIngresosMonto != null && tvGastosMonto != null) {
+            tvTotalMonto.setText(String.format(Locale.getDefault(), "$ %.2f", total));
+            tvIngresosMonto.setText(String.format(Locale.getDefault(), "$ %.2f", totalIngresos));
+            tvGastosMonto.setText(String.format(Locale.getDefault(), "$ %.2f", totalGastos));
+        } else {
+            Toast.makeText(getContext(), "Error: No se pudo actualizar el resumen", Toast.LENGTH_SHORT).show();
+        }
     }
+
 
     private void editarTransaccion(View item, Movimiento anterior, Movimiento nuevo) {
         TextView tvDescripcion = item.findViewById(R.id.tvDescripcion);
@@ -200,7 +326,6 @@ public class HomeFragment extends Fragment {
         TextView tvFecha = item.findViewById(R.id.tvFecha);
         ImageView ivIcono = item.findViewById(R.id.ivIcono);
 
-        // Restar valores anteriores
         if (anterior.getTipo().equalsIgnoreCase("Ingreso")) {
             totalIngresos -= anterior.getMonto();
             total -= anterior.getMonto();
@@ -209,31 +334,25 @@ public class HomeFragment extends Fragment {
             total += anterior.getMonto();
         }
 
-        // Aplicar nuevos valores
         tvDescripcion.setText(nuevo.getDescripcion());
         tvMonto.setText(String.format(Locale.getDefault(), "$ %.2f", nuevo.getMonto()));
-        String nuevaFecha = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
-        tvFecha.setText(nuevaFecha);
+        tvFecha.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
 
         if (nuevo.getTipo().equalsIgnoreCase("Ingreso")) {
             ivIcono.setImageResource(R.drawable.baseline_arrow_upward_24);
-            ivIcono.setTag("Ingreso");
             totalIngresos += nuevo.getMonto();
             total += nuevo.getMonto();
         } else {
             ivIcono.setImageResource(R.drawable.baseline_arrow_downward_24);
-            ivIcono.setTag("Gasto");
             totalGastos += nuevo.getMonto();
             total -= nuevo.getMonto();
         }
 
         actualizarResumen();
     }
-    private void actualizarTransaccionEnFirestore(View item, Movimiento anterior, Movimiento nuevo) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        String transaccionId = anterior.getId(); // Esto requiere que `Movimiento` tenga un campo `id`
-        if (transaccionId == null || transaccionId.isEmpty()) {
+    private void actualizarTransaccionEnFirestore(View item, Movimiento anterior, Movimiento nuevo) {
+        if (nuevo.getId() == null || nuevo.getId().isEmpty()) {
             Toast.makeText(getContext(), "Error: ID de transacción no encontrado", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -244,14 +363,17 @@ public class HomeFragment extends Fragment {
         datosActualizados.put("monto", nuevo.getMonto());
         datosActualizados.put("fecha", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
 
-        db.collection("usuarios").document(userId) // Reemplazar con el usuario autenticado
-                .collection("movimientos").document(transaccionId)
+        FirebaseFirestore.getInstance()
+                .collection("usuarios").document(userId)
+                .collection("movimientos").document(nuevo.getId())
                 .update(datosActualizados)
                 .addOnSuccessListener(aVoid -> {
-                    editarTransaccion(item, anterior, nuevo); // Actualiza la vista en pantalla
-                    Toast.makeText(getContext(), "Transacción actualizada en Firestore", Toast.LENGTH_SHORT).show();
+                    editarTransaccion(item, anterior, nuevo);
+                    cargarTransaccionesDesdeFirestore(userId);
+                    Toast.makeText(getContext(), "Transacción actualizada", Toast.LENGTH_SHORT).show();
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(getContext(), "Error al actualizar en Firestore", Toast.LENGTH_SHORT).show());
     }
+
 }

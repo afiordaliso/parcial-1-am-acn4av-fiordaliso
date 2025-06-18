@@ -25,7 +25,7 @@ public class EditarMovimientoActivity extends AppCompatActivity {
 
     private Movimiento movimiento;
     private FirebaseFirestore db;
-    private String userId = "Agustin"; // TODO: Reemplazar con el usuario autenticado
+    private String userId = "Agustin"; // TODO: Reemplazar con el usuario autenticado dinámico
     private String transaccionId;
 
     @Override
@@ -40,26 +40,43 @@ public class EditarMovimientoActivity extends AppCompatActivity {
         spinnerTipo = findViewById(R.id.spinnerTipo);
         btnGuardar = findViewById(R.id.btnGuardar);
 
-        movimiento = getIntent().getParcelableExtra("movimiento");
-        transaccionId = getIntent().getStringExtra("transaccionId"); // ID de Firestore
-
+        // Configurar el Spinner correctamente
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
                 this, R.array.tipos_transaccion, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerTipo.setAdapter(adapter);
 
+        movimiento = getIntent().getParcelableExtra("movimiento");
+        transaccionId = getIntent().getStringExtra("transaccionId"); // ID de Firestore
+
         if (movimiento != null) {
             etDescripcion.setText(movimiento.getDescripcion());
             etMonto.setText(String.valueOf(movimiento.getMonto()));
 
-            int index = movimiento.getTipo().equalsIgnoreCase("Ingreso") ? 0 : 1;
-            spinnerTipo.setSelection(index);
+            // 🚀 Asegurar que el Spinner refleje si es "Ingreso" o "Gasto"
+            if (movimiento.getTipo().equalsIgnoreCase("Ingreso")) {
+                spinnerTipo.setSelection(0); // Primera opción
+            } else {
+                spinnerTipo.setSelection(1); // Segunda opción
+            }
+
+            // Validación: evitar IDs nulos antes de actualizar Firestore
+            if (transaccionId == null || transaccionId.isEmpty()) {
+                Toast.makeText(this, "Error: ID de transacción no encontrado", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
+            }
         }
 
         btnGuardar.setOnClickListener(v -> guardarCambiosEnFirestore());
     }
 
     private void guardarCambiosEnFirestore() {
+        if (transaccionId == null || transaccionId.isEmpty()) {
+            Toast.makeText(this, "Error: ID de transacción no encontrado", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         String nuevaDescripcion = etDescripcion.getText().toString().trim();
         String montoStr = etMonto.getText().toString().trim();
         String nuevoTipo = spinnerTipo.getSelectedItem().toString();
@@ -77,6 +94,7 @@ public class EditarMovimientoActivity extends AppCompatActivity {
             return;
         }
 
+        // 🔥 Map con los datos actualizados
         Map<String, Object> datosActualizados = new HashMap<>();
         datosActualizados.put("descripcion", nuevaDescripcion);
         datosActualizados.put("tipo", nuevoTipo);
@@ -87,12 +105,13 @@ public class EditarMovimientoActivity extends AppCompatActivity {
                 .collection("movimientos").document(transaccionId)
                 .update(datosActualizados)
                 .addOnSuccessListener(aVoid -> {
+                    // Enviar cambios de vuelta a `HomeFragment`
                     Intent resultIntent = new Intent();
-                    Movimiento editado = new Movimiento(nuevaDescripcion, nuevoTipo, nuevoMonto, movimiento.getFecha());
+                    Movimiento editado = new Movimiento(transaccionId, nuevaDescripcion, nuevoTipo, nuevoMonto, movimiento.getFecha());
                     resultIntent.putExtra("movimientoEditado", editado);
                     setResult(RESULT_OK, resultIntent);
                     finish();
                 })
-                .addOnFailureListener(e -> Toast.makeText(this, "Error al actualizar", Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> Toast.makeText(this, "Error al actualizar en Firestore", Toast.LENGTH_SHORT).show());
     }
 }

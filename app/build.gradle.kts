@@ -57,7 +57,6 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.annotation)
 
-    // Firebase (usando BoM)
     implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
     implementation ("com.google.firebase:firebase-analytics")
     implementation ("com.google.firebase:firebase-database")
@@ -65,6 +64,7 @@ dependencies {
     implementation ("com.google.firebase:firebase-auth-ktx")
     implementation ("com.google.firebase:firebase-firestore")
     implementation ("com.google.firebase:firebase-storage:20.2.0")
+    implementation ("com.google.android.gms:play-services-base:18.2.0")
 
 
     // Google Sign-In
