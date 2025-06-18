@@ -26,7 +26,6 @@ import com.example.parcial_1_am_acn4av_fiordaliso.EditarMovimientoActivity;
 import com.example.parcial_1_am_acn4av_fiordaliso.Movimiento;
 import com.example.parcial_1_am_acn4av_fiordaliso.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -194,12 +193,20 @@ public class HomeFragment extends Fragment {
         db.collection("movimientos")
                 .add(movimiento)
                 .addOnSuccessListener(documentReference -> {
-                    Toast.makeText(getContext(), "✅ Transacción agregada correctamente", Toast.LENGTH_SHORT).show();
-                    cargarTransaccionesDesdeFirestore(userId); // sin delay, directa
+                    // Guardamos el ID generado como parte del documento, si lo necesitás luego
+                    String idGenerado = documentReference.getId();
+                    documentReference.update("id", idGenerado) // opcional
+                            .addOnSuccessListener(aVoid -> {
+                                Toast.makeText(getContext(), "✅ Transacción agregada correctamente", Toast.LENGTH_SHORT).show();
+                                cargarTransaccionesDesdeFirestore(userId);
+                            })
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(getContext(), "⚠️ Transacción guardada, pero no se pudo registrar el ID: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                            );
                 })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), "❌ Error al guardar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+                .addOnFailureListener(e ->
+                        Toast.makeText(getContext(), "❌ Error al guardar: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                );
     }
     private void cargarTransaccionesDesdeFirestore(String userId) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -209,7 +216,6 @@ public class HomeFragment extends Fragment {
             return;
         }
 
-        // 🔄 Resetear visual y contadores
         listaTransacciones.removeAllViews();
         total = 0;
         totalIngresos = 0;
@@ -226,7 +232,7 @@ public class HomeFragment extends Fragment {
                     }
 
                     List<DocumentSnapshot> docs = querySnapshot.getDocuments();
-                    // 🧮 Ordenar por fecha descendente
+
                     Collections.sort(docs, (a, b) -> {
                         String f1 = a.getString("fecha");
                         String f2 = b.getString("fecha");
@@ -238,14 +244,13 @@ public class HomeFragment extends Fragment {
                         String tipo = doc.getString("tipo");
                         Double monto = doc.getDouble("monto");
                         String fechaRaw = doc.getString("fecha");
-                        String transaccionId = doc.getId();
+                        String transaccionId = doc.contains("id") ? doc.getString("id") : doc.getId();
 
-                        if (descripcion == null || tipo == null || monto == null || fechaRaw == null) {
-                            Log.w("Firestore", "Transacción con campos nulos: " + transaccionId);
+                        if (descripcion == null || tipo == null || monto == null || fechaRaw == null || transaccionId == null) {
+                            Log.w("Firestore", "Transacción con campos nulos o ID faltante.");
                             continue;
                         }
 
-                        // 📆 Convertir "yyyyMMddHHmmss" → "dd/MM/yyyy"
                         String fechaFormateada = fechaRaw.length() >= 8
                                 ? fechaRaw.substring(6, 8) + "/" + fechaRaw.substring(4, 6) + "/" + fechaRaw.substring(0, 4)
                                 : fechaRaw;
@@ -302,13 +307,32 @@ public class HomeFragment extends Fragment {
             return;
         }
 
+        // 🧠 Validar ID antes de pasar al intent
+        item.setOnClickListener(v -> {
+            viewSeleccionado = item;
+
+            String idSeguro = (transaccionId == null || transaccionId.trim().isEmpty()) ? "SIN_ID" : transaccionId;
+            Log.d("DEBUG", "Transacción seleccionada - ID: " + idSeguro);
+
+            movimientoOriginal = new Movimiento(
+                    idSeguro,
+                    descripcion,
+                    tipo,
+                    monto,
+                    fecha
+            );
+
+            Intent intent = new Intent(getContext(), EditarMovimientoActivity.class);
+            intent.putExtra("movimiento", movimientoOriginal);
+            editarMovimientoLauncher.launch(intent);
+        });
+
         listaTransacciones.addView(item);
 
         if (listaTransacciones.indexOfChild(item) == -1) {
             Toast.makeText(getContext(), "Error: La transacción no se agregó correctamente", Toast.LENGTH_SHORT).show();
         }
     }
-
     private void actualizarResumen() {
         if (tvTotalMonto != null && tvIngresosMonto != null && tvGastosMonto != null) {
             tvTotalMonto.setText(String.format(Locale.getDefault(), "$ %.2f", total));
@@ -357,15 +381,17 @@ public class HomeFragment extends Fragment {
             return;
         }
 
+        String fechaFormateada = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(new Date());
+
         Map<String, Object> datosActualizados = new HashMap<>();
         datosActualizados.put("descripcion", nuevo.getDescripcion());
         datosActualizados.put("tipo", nuevo.getTipo());
         datosActualizados.put("monto", nuevo.getMonto());
-        datosActualizados.put("fecha", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+        datosActualizados.put("fecha", fechaFormateada); // ⏱ mantener consistencia
 
         FirebaseFirestore.getInstance()
-                .collection("usuarios").document(userId)
-                .collection("movimientos").document(nuevo.getId())
+                .collection("movimientos") // 🔄 corregido
+                .document(nuevo.getId())
                 .update(datosActualizados)
                 .addOnSuccessListener(aVoid -> {
                     editarTransaccion(item, anterior, nuevo);
@@ -375,5 +401,4 @@ public class HomeFragment extends Fragment {
                 .addOnFailureListener(e ->
                         Toast.makeText(getContext(), "Error al actualizar en Firestore", Toast.LENGTH_SHORT).show());
     }
-
 }

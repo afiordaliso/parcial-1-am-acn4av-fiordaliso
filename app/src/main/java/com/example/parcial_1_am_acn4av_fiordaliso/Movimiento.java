@@ -4,28 +4,24 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class Movimiento implements Parcelable {
-    private String id; // ✅ Nuevo campo para identificar cada transacción en Firestore
+    private String id;
     private String descripcion;
     private String tipo;
     private double monto;
     private String fecha;
 
-    // Constructor con ID (cuando ya existe en Firestore)
+    // Constructor con ID
     public Movimiento(String id, String descripcion, String tipo, double monto, String fecha) {
-        this.id = (id == null || id.isEmpty()) ? "SIN_ID" : id; // Previene valores nulos
+        this.id = (id != null && !id.trim().isEmpty()) ? id : "SIN_ID";
         this.descripcion = descripcion;
         this.tipo = tipo;
         this.monto = monto;
         this.fecha = fecha;
     }
 
-    // Constructor sin ID (cuando se crea un movimiento nuevo)
+    // Constructor sin ID (nuevo movimiento)
     public Movimiento(String descripcion, String tipo, double monto, String fecha) {
-        this.id = "SIN_ID"; // Se asignará desde Firestore luego
-        this.descripcion = descripcion;
-        this.tipo = tipo;
-        this.monto = monto;
-        this.fecha = fecha;
+        this("SIN_ID", descripcion, tipo, monto, fecha);
     }
 
     protected Movimiento(Parcel in) {
@@ -36,7 +32,7 @@ public class Movimiento implements Parcelable {
         fecha = in.readString();
     }
 
-    public static final Creator<Movimiento> CREATOR = new Creator<Movimiento>() {
+    public static final Creator<Movimiento> CREATOR = new Creator<>() {
         @Override
         public Movimiento createFromParcel(Parcel in) {
             return new Movimiento(in);
@@ -62,13 +58,12 @@ public class Movimiento implements Parcelable {
         return 0;
     }
 
-    // ✅ Getters y Setters mejorados para evitar valores nulos
     public String getId() {
         return id;
     }
 
     public void setId(String id) {
-        this.id = (id == null || id.isEmpty()) ? "SIN_ID" : id; // Validación de seguridad
+        this.id = (id != null && !id.trim().isEmpty()) ? id : "SIN_ID";
     }
 
     public String getDescripcion() {
