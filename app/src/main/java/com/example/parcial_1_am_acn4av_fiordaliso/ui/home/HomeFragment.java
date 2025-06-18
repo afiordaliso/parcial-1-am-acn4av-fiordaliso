@@ -63,6 +63,9 @@ public class HomeFragment extends Fragment {
                         actualizarTransaccionEnFirestore(viewSeleccionado, movimientoOriginal, actualizado);
                         Toast.makeText(getContext(), "Transacción actualizada", Toast.LENGTH_SHORT).show();
                     }
+                } else if (result.getResultCode() == Activity.RESULT_FIRST_USER) {
+                    cargarTransaccionesDesdeFirestore(userId);
+                    Toast.makeText(getContext(), "Transacción eliminada", Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -76,23 +79,19 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // 🔥 Inicializar elementos correctamente
         listaTransacciones = view.findViewById(R.id.listaTransacciones);
         tvTotalMonto = view.findViewById(R.id.tvTotalMonto);
         tvIngresosMonto = view.findViewById(R.id.tvIngresosMonto);
         tvGastosMonto = view.findViewById(R.id.tvGastosMonto);
         fabMain = view.findViewById(R.id.fabMain);
 
-        // 🚀 Validación mejorada: evitar errores de referencia nula
         if (listaTransacciones == null || tvTotalMonto == null || tvIngresosMonto == null || tvGastosMonto == null || fabMain == null) {
             Toast.makeText(getContext(), "Error: Elementos de la vista no inicializados correctamente", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // 🔥 Configurar el botón de nueva transacción
         fabMain.setOnClickListener(v -> mostrarDialogoNuevaTransaccion());
 
-        // 🔥 Obtener usuario autenticado de Firebase
         FirebaseUser usuarioActual = FirebaseAuth.getInstance().getCurrentUser();
         if (usuarioActual != null) {
             userId = usuarioActual.getUid();
@@ -126,7 +125,6 @@ public class HomeFragment extends Fragment {
             String montoStr = etMonto.getText().toString().trim();
             String tipo = spinnerTipo.getSelectedItem().toString();
 
-            // 🔥 Validaciones mejoradas para evitar errores
             if (descripcion.isEmpty()) {
                 Toast.makeText(getContext(), "Error: La descripción no puede estar vacía", Toast.LENGTH_SHORT).show();
                 return;
@@ -145,7 +143,6 @@ public class HomeFragment extends Fragment {
                     return;
                 }
 
-                // 🔥 Corrección: Validar tipo de transacción antes de guardar
                 if (!tipo.equalsIgnoreCase("Ingreso") && !tipo.equalsIgnoreCase("Gasto")) {
                     Toast.makeText(getContext(), "Error: Tipo de transacción inválido", Toast.LENGTH_SHORT).show();
                     return;
@@ -193,19 +190,18 @@ public class HomeFragment extends Fragment {
         db.collection("movimientos")
                 .add(movimiento)
                 .addOnSuccessListener(documentReference -> {
-                    // Guardamos el ID generado como parte del documento, si lo necesitás luego
                     String idGenerado = documentReference.getId();
-                    documentReference.update("id", idGenerado) // opcional
+                    documentReference.update("id", idGenerado)
                             .addOnSuccessListener(aVoid -> {
-                                Toast.makeText(getContext(), "✅ Transacción agregada correctamente", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getContext(), "Transacción agregada correctamente", Toast.LENGTH_SHORT).show();
                                 cargarTransaccionesDesdeFirestore(userId);
                             })
                             .addOnFailureListener(e ->
-                                    Toast.makeText(getContext(), "⚠️ Transacción guardada, pero no se pudo registrar el ID: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(getContext(), "⚠Transacción guardada, pero no se pudo registrar el ID: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                             );
                 })
                 .addOnFailureListener(e ->
-                        Toast.makeText(getContext(), "❌ Error al guardar: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(getContext(), "Error al guardar: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
     }
     private void cargarTransaccionesDesdeFirestore(String userId) {
@@ -307,7 +303,6 @@ public class HomeFragment extends Fragment {
             return;
         }
 
-        // 🧠 Validar ID antes de pasar al intent
         item.setOnClickListener(v -> {
             viewSeleccionado = item;
 
@@ -387,14 +382,13 @@ public class HomeFragment extends Fragment {
         datosActualizados.put("descripcion", nuevo.getDescripcion());
         datosActualizados.put("tipo", nuevo.getTipo());
         datosActualizados.put("monto", nuevo.getMonto());
-        datosActualizados.put("fecha", fechaFormateada); // ⏱ mantener consistencia
+        datosActualizados.put("fecha", fechaFormateada);
 
         FirebaseFirestore.getInstance()
-                .collection("movimientos") // 🔄 corregido
+                .collection("movimientos")
                 .document(nuevo.getId())
                 .update(datosActualizados)
                 .addOnSuccessListener(aVoid -> {
-                    editarTransaccion(item, anterior, nuevo);
                     cargarTransaccionesDesdeFirestore(userId);
                     Toast.makeText(getContext(), "Transacción actualizada", Toast.LENGTH_SHORT).show();
                 })
