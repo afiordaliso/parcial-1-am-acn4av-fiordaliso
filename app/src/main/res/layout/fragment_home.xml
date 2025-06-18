@@ -155,10 +155,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="8dp"
-            android:paddingBottom="16dp"/> <!-- Reducir padding inferior -->
+            android:paddingBottom="16dp"/>
     </ScrollView>
 
-    <!-- Ajustar posición del FAB -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabMain"
         android:layout_width="wrap_content"

@@ -30,5 +30,7 @@
             android:exported="true"
             android:label="@string/app_name" />
         <activity android:name=".EditarMovimientoActivity" />
+        <activity android:name=".EditarCuentaActivity" />
+
     </application>
 </manifest>
