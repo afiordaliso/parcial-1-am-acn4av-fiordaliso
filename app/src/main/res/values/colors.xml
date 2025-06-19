@@ -17,4 +17,5 @@
     <color name="colorSurfaceDark">#1E1E1E</color>
     <color name="colorOnBackgroundDark">#E1E1E1</color>
     <color name="colorOnSurfaceDark">#F0F0F0</color>
+    <color name="fondo">#F5F5F5</color>
 </resources>

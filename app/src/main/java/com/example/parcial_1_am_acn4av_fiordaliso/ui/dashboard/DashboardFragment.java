@@ -95,7 +95,7 @@ public class DashboardFragment extends Fragment {
                 .addOnSuccessListener(docRef -> {
                     String idGenerado = docRef.getId();
                     docRef.update("id", idGenerado);
-                    Toast.makeText(getContext(), "✅ Cuenta guardada", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Cuenta guardada", Toast.LENGTH_SHORT).show();
                     cargarCuentasDesdeFirestore();
                 })
                 .addOnFailureListener(e ->
@@ -145,7 +145,7 @@ public class DashboardFragment extends Fragment {
             Intent intent = new Intent(getContext(), EditarCuentaActivity.class);
             intent.putExtra("cuentaId", cuentaId);
             intent.putExtra("cuentaNombre", nombre);
-            editarCuentaLauncher.launch(intent); // 👉 usar launcher
+            editarCuentaLauncher.launch(intent);
         });
 
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
