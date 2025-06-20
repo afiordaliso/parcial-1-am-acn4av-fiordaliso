@@ -60,10 +60,22 @@ public class MainActivity extends AppCompatActivity {
 
         if (navHostFragment != null) {
             navController = navHostFragment.getNavController();
+
             AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
                     R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications)
                     .build();
+
             NavigationUI.setupWithNavController(bottomNavigationView, navController);
+
+            // Escucha cambios de fragmento para ocultar menú en splash
+            navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+                if (destination.getId() == R.id.splashFragment) {
+                    bottomNavigationView.setVisibility(android.view.View.GONE);
+                } else {
+                    bottomNavigationView.setVisibility(android.view.View.VISIBLE);
+                }
+            });
+
         } else {
             Log.e(TAG, "Error: NavHostFragment no encontrado");
             showToast("Error en navegación, reinicia la app");
@@ -89,8 +101,6 @@ public class MainActivity extends AppCompatActivity {
                 .addOnSuccessListener(uri -> Log.d("Download", "URL del archivo: " + uri.toString()))
                 .addOnFailureListener(e -> showToast("Error al descargar archivo: " + e.getMessage()));
     }
-
-
 
     private void showToast(String mensaje) {
         Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show();

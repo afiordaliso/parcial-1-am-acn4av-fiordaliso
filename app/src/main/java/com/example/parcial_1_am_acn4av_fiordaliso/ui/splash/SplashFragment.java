@@ -18,7 +18,6 @@ public class SplashFragment extends Fragment {
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        // Inflar el layout
         return inflater.inflate(R.layout.splash_fragment, container, false);
     }
 

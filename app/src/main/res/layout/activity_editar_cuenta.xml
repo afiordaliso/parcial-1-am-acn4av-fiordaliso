@@ -5,7 +5,7 @@
     android:padding="24dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:backgroundTint="@color/colorPrimary">
+    android:background="@color/fondo">
 
     <EditText
         android:id="@+id/etNombreCuenta"
