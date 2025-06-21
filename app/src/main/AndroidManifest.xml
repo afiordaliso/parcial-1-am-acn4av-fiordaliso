@@ -8,11 +8,14 @@
     <application
         android:allowBackup="true"
         android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
         android:theme="@style/Theme.Parcial1amacn4avfiordaliso"
         tools:targetApi="31">
 
-        <activity android:name=".LoginActivity"
+        <activity
+            android:name=".LoginActivity"
             android:exported="true"
+            android:theme="@style/Theme.Parcial1amacn4avfiordaliso"
             android:label="@string/title_activity_login">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -20,15 +23,19 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".RegisterActivity"
-            android:exported="false" />
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Parcial1amacn4avfiordaliso" />
 
-        <activity android:name=".MainActivity"
+        <activity
+            android:name=".MainActivity"
             android:exported="true"
+            android:theme="@style/Theme.Parcial1amacn4avfiordaliso"
             android:label="@string/app_name" />
+
         <activity android:name=".EditarMovimientoActivity" />
         <activity android:name=".EditarCuentaActivity" />
         <activity android:name=".EditarTicketActivity" />
-
     </application>
 </manifest>

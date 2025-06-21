@@ -27,6 +27,10 @@ public class RegisterActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
+
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
         initUI();

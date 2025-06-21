@@ -3,6 +3,7 @@ package com.example.parcial_1_am_acn4av_fiordaliso.ui.home;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -20,19 +21,24 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.parcial_1_am_acn4av_fiordaliso.EditarMovimientoActivity;
 import com.example.parcial_1_am_acn4av_fiordaliso.Movimiento;
 import com.example.parcial_1_am_acn4av_fiordaliso.R;
+import com.github.mikephil.charting.charts.PieChart;
+import com.github.mikephil.charting.data.PieData;
+import com.github.mikephil.charting.data.PieDataSet;
+import com.github.mikephil.charting.data.PieEntry;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -84,9 +90,12 @@ public class HomeFragment extends Fragment {
         tvIngresosMonto = view.findViewById(R.id.tvIngresosMonto);
         tvGastosMonto = view.findViewById(R.id.tvGastosMonto);
         fabMain = view.findViewById(R.id.fabMain);
+        PieChart pieChart = view.findViewById(R.id.pieChart);
 
-        if (listaTransacciones == null || tvTotalMonto == null || tvIngresosMonto == null || tvGastosMonto == null || fabMain == null) {
-            Toast.makeText(getContext(), "Error: Elementos de la vista no inicializados correctamente", Toast.LENGTH_SHORT).show();
+
+        if (listaTransacciones == null || tvTotalMonto == null || tvIngresosMonto == null ||
+                tvGastosMonto == null || fabMain == null || pieChart == null) {
+            Toast.makeText(getContext(), "Error: Elementos no inicializados correctamente", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -265,10 +274,47 @@ public class HomeFragment extends Fragment {
                     }
 
                     actualizarResumen();
+                    actualizarGraficoFinanciero();
+
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(getContext(), "Error al cargar transacciones: " + e.getMessage(), Toast.LENGTH_LONG).show()
                 );
+    }
+
+    private void actualizarGraficoFinanciero() {
+        View root = getView();
+        if (root == null) return;
+
+        PieChart pieChart = root.findViewById(R.id.pieChart);
+        if (pieChart == null) return;
+
+        List<PieEntry> entradas = new ArrayList<>();
+        List<Integer> colores = new ArrayList<>();
+
+        if (totalIngresos > 0) {
+            entradas.add(new PieEntry((float) totalIngresos, "Ingresos"));
+            colores.add(ContextCompat.getColor(requireContext(), R.color.colorIngresoChart));
+        }
+
+        if (totalGastos > 0) {
+            entradas.add(new PieEntry((float) totalGastos, "Gastos"));
+            colores.add(ContextCompat.getColor(requireContext(), R.color.colorGastoChart));
+        }
+
+        PieDataSet dataSet = new PieDataSet(entradas, "");
+        dataSet.setColors(colores);
+        dataSet.setValueTextSize(10f);
+        dataSet.setValueTextColor(Color.DKGRAY);
+
+        PieData pieData = new PieData(dataSet);
+        pieChart.setData(pieData);
+        pieChart.setCenterText("Ingresos vs Gastos");
+        pieChart.setUsePercentValues(true);
+        dataSet.setValueTextColor(Color.WHITE);
+        pieChart.getDescription().setEnabled(false);
+        pieChart.animateY(1000);
+        pieChart.invalidate();
     }
     private void agregarTransaccion(String transaccionId, String descripcion, String tipo, double monto, String fecha) {
         if (listaTransacciones == null) {

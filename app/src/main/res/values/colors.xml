@@ -12,6 +12,9 @@
     <color name="colorTransferencia">#0361D7</color>
     <color name="Eliminar">#D32F2F</color>
 
+    <color name="colorIngresoChart">#34C759</color>
+<color name="colorGastoChart">#D32F2F</color>
+
 
     <color name="colorBackgroundDark">#121212</color>
     <color name="colorSurfaceDark">#1E1E1E</color>

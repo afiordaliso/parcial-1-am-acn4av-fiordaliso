@@ -43,10 +43,13 @@ tasks.withType<JavaCompile>().configureEach {
 
 dependencies {
     // Navegación
-    implementation ("androidx.navigation:navigation-fragment:2.5.3")
-    implementation ("androidx.navigation:navigation-ui:2.5.3")
+    implementation("androidx.navigation:navigation-fragment:2.5.3")
+    implementation("androidx.navigation:navigation-ui:2.5.3")
 
-    // Librerías comunes
+    // MPAndroidChart (gráficos)
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+    // Core UI
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.constraintlayout)
@@ -57,20 +60,20 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.annotation)
 
+    // Firebase (BoM gestiona versiones)
     implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
-    implementation ("com.google.firebase:firebase-analytics")
-    implementation ("com.google.firebase:firebase-database")
-    implementation ("com.google.firebase:firebase-auth")
-    implementation ("com.google.firebase:firebase-auth-ktx")
-    implementation ("com.google.firebase:firebase-firestore")
-    implementation ("com.google.firebase:firebase-storage:20.2.0")
-    implementation ("com.google.android.gms:play-services-base:18.2.0")
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-database")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-storage:20.2.0")
 
+    // Google services
+    implementation("com.google.android.gms:play-services-base:18.2.0")
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
 
-    // Google Sign-In
-    implementation ("com.google.android.gms:play-services-auth:20.7.0")
-
-    // Test
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

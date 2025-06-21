@@ -2,9 +2,13 @@ package com.example.parcial_1_am_acn4av_fiordaliso.ui.dashboard;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DownloadManager;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -61,6 +65,28 @@ public class DashboardFragment extends Fragment {
         btnAgregarCuenta.setOnClickListener(v -> mostrarDialogoAgregarCuenta());
 
         cargarCuentasDesdeFirestore();
+
+        Button btnDescargarInfo = view.findViewById(R.id.btnDescargarInfo);
+        if (btnDescargarInfo != null) {
+            btnDescargarInfo.setOnClickListener(v -> {
+                String url = "https://www.hubspot.com/hubfs/media/Elementosdeunplanfinanciero.png";
+
+                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+                request.setTitle("Descargando infografía");
+                request.setDescription("Tu archivo se está descargando...");
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                request.setDestinationInExternalPublicDir(
+                        Environment.DIRECTORY_DOWNLOADS, "infografia_finanzas.png");
+
+                DownloadManager manager = (DownloadManager)
+                        requireContext().getSystemService(Context.DOWNLOAD_SERVICE);
+                if (manager != null) {
+                    manager.enqueue(request);
+                    Toast.makeText(getContext(), "Descarga iniciada", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
     }
 
     private void mostrarDialogoAgregarCuenta() {
