@@ -1,14 +1,12 @@
-package com.example.parcial_1_am_acn4av_fiordaliso.ui.notifications;
+package com.example.parcial_1_am_acn4av_fiordaliso.ui.cartera;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,7 +31,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
 
-public class NotificationsFragment extends Fragment {
+public class CarteraFragment extends Fragment {
 
     private LinearLayout listaTickets;
     private Button btnAgregarTicket;
@@ -45,7 +43,7 @@ public class NotificationsFragment extends Fragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
 
-        View view = inflater.inflate(R.layout.fragment_notifications, container, false);
+        View view = inflater.inflate(R.layout.fragment_carteras, container, false);
 
         btnAgregarTicket = view.findViewById(R.id.btnAgregarTicket);
         listaTickets = view.findViewById(R.id.listaTickets);

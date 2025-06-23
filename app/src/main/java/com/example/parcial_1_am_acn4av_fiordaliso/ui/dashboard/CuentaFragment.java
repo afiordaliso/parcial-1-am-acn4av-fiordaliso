@@ -34,7 +34,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DashboardFragment extends Fragment {
+public class CuentaFragment extends Fragment {
 
     private LinearLayout listaCuentas;
     private Button btnAgregarCuenta;
@@ -51,7 +51,7 @@ public class DashboardFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_dashboard, container, false);
+        return inflater.inflate(R.layout.fragment_cuentas, container, false);
     }
 
     @Override
