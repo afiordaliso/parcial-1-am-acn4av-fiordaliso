@@ -165,7 +165,7 @@
         android:layout_marginBottom="8dp"
         android:fillViewport="true"
         app:layout_constraintTop_toBottomOf="@id/tvTituloTransacciones"
-        app:layout_constraintBottom_toTopOf="@id/fabMain"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
