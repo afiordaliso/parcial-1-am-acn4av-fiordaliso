@@ -5,7 +5,7 @@ import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -14,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,7 +23,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.parcial_1_am_acn4av_fiordaliso.EditarCuentaActivity;
@@ -31,7 +32,10 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public class CuentaFragment extends Fragment {
@@ -42,7 +46,7 @@ public class CuentaFragment extends Fragment {
     private final ActivityResultLauncher<Intent> editarCuentaLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == Activity.RESULT_OK || result.getResultCode() == Activity.RESULT_FIRST_USER) {
-                    cargarCuentasDesdeFirestore(); // Recargar si fue editada o eliminada
+                    cargarCuentasDesdeFirestore();
                 }
             });
 
@@ -78,15 +82,14 @@ public class CuentaFragment extends Fragment {
                 request.setDestinationInExternalPublicDir(
                         Environment.DIRECTORY_DOWNLOADS, "infografia_finanzas.png");
 
-                DownloadManager manager = (DownloadManager)
-                        requireContext().getSystemService(Context.DOWNLOAD_SERVICE);
+                DownloadManager manager =
+                        (DownloadManager) requireContext().getSystemService(Context.DOWNLOAD_SERVICE);
                 if (manager != null) {
                     manager.enqueue(request);
                     Toast.makeText(getContext(), "Descarga iniciada", Toast.LENGTH_SHORT).show();
                 }
             });
         }
-
     }
 
     private void mostrarDialogoAgregarCuenta() {
@@ -110,10 +113,12 @@ public class CuentaFragment extends Fragment {
 
     private void guardarCuentaEnFirestore(String nombreCuenta) {
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        String fechaHoy = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
 
         Map<String, Object> datos = new HashMap<>();
         datos.put("nombre", nombreCuenta);
         datos.put("userId", userId);
+        datos.put("fecha", fechaHoy);
 
         FirebaseFirestore.getInstance()
                 .collection("cuentas")
@@ -141,9 +146,10 @@ public class CuentaFragment extends Fragment {
                     for (DocumentSnapshot doc : query.getDocuments()) {
                         String nombre = doc.getString("nombre");
                         String id = doc.contains("id") ? doc.getString("id") : doc.getId();
+                        String fecha = doc.getString("fecha");
 
                         if (nombre != null && id != null) {
-                            agregarCuentaALista(nombre, id);
+                            agregarCuentaALista(nombre, id, fecha);
                         }
                     }
                 })
@@ -152,33 +158,29 @@ public class CuentaFragment extends Fragment {
                 );
     }
 
-    private void agregarCuentaALista(String nombre, String cuentaId) {
-        CardView card = new CardView(requireContext());
-        card.setCardElevation(8);
-        card.setRadius(16);
-        card.setUseCompatPadding(true);
-        card.setCardBackgroundColor(Color.parseColor("#FFFFFF"));
+    private void agregarCuentaALista(String nombre, String cuentaId, String fecha) {
+        LayoutInflater inflater = LayoutInflater.from(requireContext());
+        View itemView = inflater.inflate(R.layout.item_cuenta, listaCuentas, false);
 
-        TextView texto = new TextView(requireContext());
-        texto.setText(nombre);
-        texto.setTextSize(16);
-        texto.setPadding(24, 24, 24, 24);
-        texto.setTextColor(Color.parseColor("#212121"));
+        TextView tvNombre = itemView.findViewById(R.id.tvNombreCuenta);
+        TextView tvFecha = itemView.findViewById(R.id.tvFechaCuenta);
+        ImageView icon = itemView.findViewById(R.id.iconCuenta);
 
-        card.addView(texto);
+        tvNombre.setText(nombre);
+        tvFecha.setText(fecha != null ? fecha : "");
 
-        card.setOnClickListener(v -> {
+        icon.setColorFilter(
+                ContextCompat.getColor(requireContext(), R.color.colorPrimary),
+                PorterDuff.Mode.SRC_IN
+        );
+
+        itemView.setOnClickListener(v -> {
             Intent intent = new Intent(getContext(), EditarCuentaActivity.class);
             intent.putExtra("cuentaId", cuentaId);
             intent.putExtra("cuentaNombre", nombre);
             editarCuentaLauncher.launch(intent);
         });
 
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, 16, 0, 0);
-
-        listaCuentas.addView(card, params);
+        listaCuentas.addView(itemView);
     }
 }
