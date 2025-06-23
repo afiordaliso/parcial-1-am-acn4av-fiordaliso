@@ -37,6 +37,8 @@ public class CarteraFragment extends Fragment {
     private Button btnAgregarTicket;
     private final String MARKETSTACK_API_KEY = "f02ca1e024127225efec3b5b1cac2621"; // Reemplazá con tu clave real
 
+    private TextView tvTotalCarteraMonto;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -47,6 +49,7 @@ public class CarteraFragment extends Fragment {
 
         btnAgregarTicket = view.findViewById(R.id.btnAgregarTicket);
         listaTickets = view.findViewById(R.id.listaTickets);
+        tvTotalCarteraMonto = view.findViewById(R.id.tvTotalCarteraMonto);
 
         btnAgregarTicket.setOnClickListener(v -> mostrarDialogoSeleccionarTicker());
 
@@ -205,15 +208,21 @@ public class CarteraFragment extends Fragment {
                 .get()
                 .addOnSuccessListener(query -> {
                     LayoutInflater inflater = LayoutInflater.from(requireContext());
+                    double totalEnCartera = 0.0;
 
                     for (DocumentSnapshot doc : query.getDocuments()) {
-                        String ticker = doc.getString("ticker") != null ? doc.getString("ticker") : "—";
-                        long cantidad = doc.getLong("cantidad") != null ? doc.getLong("cantidad") : 0;
-                        double precio = doc.getDouble("precioActual") != null ? doc.getDouble("precioActual") : 0;
-                        String cambioRaw = doc.getString("variacion") != null ? doc.getString("variacion") : "0.00";
+                        String ticker = doc.getString("ticker");
+                        Long cantidadObj = doc.getLong("cantidad");
+                        Double precioObj = doc.getDouble("precioActual");
+                        String cambioRaw = doc.getString("variacion");
 
-                        String cambio = cambioRaw.endsWith("%") ? cambioRaw : cambioRaw + "%";
-                        double valorTotal = precio * cantidad;
+                        String nombreTicker = ticker != null ? ticker : "—";
+                        long cantidad = cantidadObj != null ? cantidadObj : 0;
+                        double precio = precioObj != null ? precioObj : 0.0;
+                        String variacion = (cambioRaw != null && !cambioRaw.isEmpty()) ? cambioRaw : "0.00";
+
+                        double valorTotal = cantidad * precio;
+                        totalEnCartera += valorTotal;
 
                         View card = inflater.inflate(R.layout.item_ticket, listaTickets, false);
 
@@ -221,35 +230,38 @@ public class CarteraFragment extends Fragment {
                         TextView tvVariacion = card.findViewById(R.id.tvVariacion);
                         TextView tvValor = card.findViewById(R.id.tvValor);
 
-                        tvTickerCantidad.setText(ticker + " (x" + cantidad + ")");
+                        tvTickerCantidad.setText(nombreTicker + " (x" + cantidad + ")");
 
-                        // Variación con color solo en el número
                         String textoVariacion = "Variación: ";
-                        SpannableString spannable = new SpannableString(textoVariacion + cambio);
-                        int color = cambio.startsWith("-") ? 0xFFE53935 : 0xFF43A047;
+                        SpannableString spannable = new SpannableString(textoVariacion + variacion);
+                        int color = variacion.startsWith("-") ? 0xFFE53935 : 0xFF43A047;
                         spannable.setSpan(
                                 new ForegroundColorSpan(color),
                                 textoVariacion.length(),
-                                textoVariacion.length() + cambio.length(),
+                                textoVariacion.length() + variacion.length(),
                                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                         );
                         tvVariacion.setText(spannable);
 
-                        // Formateo elegante con separador de miles
                         tvValor.setText(String.format("$%,.2f", valorTotal));
                         tvValor.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
 
                         card.setOnClickListener(v -> {
                             Intent intent = new Intent(requireContext(), EditarTicketActivity.class);
                             intent.putExtra("docId", doc.getId());
-                            intent.putExtra("ticker", ticker);
+                            intent.putExtra("ticker", nombreTicker);
                             intent.putExtra("cantidad", cantidad);
                             intent.putExtra("precioActual", precio);
-                            intent.putExtra("variacion", cambio);
+                            intent.putExtra("variacion", variacion);
                             startActivityForResult(intent, 123);
                         });
 
                         listaTickets.addView(card);
+                    }
+
+                    // 💰 Mostrar total formateado
+                    if (tvTotalCarteraMonto != null) {
+                        tvTotalCarteraMonto.setText(String.format(Locale.getDefault(), "$ %,.2f", totalEnCartera));
                     }
                 })
                 .addOnFailureListener(e ->
